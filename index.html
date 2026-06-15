@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f1a">
+<title>Item Counter AI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg:#0f0f1a; --surface:#1a1a2e; --surface2:#252540;
+  --accent:#6c63ff; --text:#e8e8f0; --muted:#8888aa;
+  --border:rgba(255,255,255,0.08); --success:#00d4aa; --warn:#ffaa00;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100dvh; display:flex; flex-direction:column; }
+header { padding:16px 20px 12px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10; }
+.logo { width:36px; height:36px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+header h1 { font-size:17px; font-weight:600; }
+header small { font-size:12px; color:var(--muted); display:block; margin-top:1px; }
+.hbtn { margin-left:auto; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:10px; font-size:13px; cursor:pointer; white-space:nowrap; }
+main { flex:1; padding:20px; display:flex; flex-direction:column; gap:16px; max-width:500px; width:100%; margin:0 auto; }
+.zone { background:var(--surface); border:2px dashed rgba(108,99,255,0.4); border-radius:16px; min-height:210px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; cursor:pointer; position:relative; overflow:hidden; }
+.zone.ready { border-style:solid; border-color:var(--accent); }
+.zone img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:14px; }
+.zone-over { position:absolute; inset:0; background:rgba(0,0,0,0.5); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border-radius:14px; }
+.zone p { font-size:14px; color:var(--muted); text-align:center; line-height:1.5; }
+.zone .hint { font-size:12px; color:rgba(136,136,170,0.5); }
+.chips { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+.chips::-webkit-scrollbar { display:none; }
+.chip { flex-shrink:0; padding:7px 13px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:13px; cursor:pointer; white-space:nowrap; transition:all .15s; }
+.chip.on { background:var(--accent); border-color:var(--accent); color:white; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.btn { padding:14px; border-radius:12px; border:none; font-size:15px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:transform .1s,opacity .2s; }
+.btn:active { transform:scale(0.97); }
+.btn:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+.bcam { background:var(--accent); color:white; }
+.bgal { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+.bcnt { background:linear-gradient(135deg,#ff6584,#ff4a6a); color:white; grid-column:span 2; font-size:16px; padding:16px; }
+.loading { display:none; padding:28px 20px; text-align:center; }
+.loading.on { display:block; }
+.spin { width:40px; height:40px; border:3px solid var(--surface2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading p { font-size:14px; color:var(--muted); }
+.errbox { display:none; background:rgba(255,80,80,.1); border:1px solid rgba(255,80,80,.3); border-radius:12px; padding:14px 16px; font-size:14px; color:#ff8080; line-height:1.6; }
+.errbox.on { display:block; }
+.result { display:none; background:var(--surface); border-radius:16px; overflow:hidden; }
+.result.on { display:block; }
+.rtop { padding:20px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); }
+.cbox { width:76px; height:76px; background:linear-gradient(135deg,var(--accent),#8b5cf6); border-radius:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.cbox span { font-size:30px; font-weight:700; color:white; }
+.rmeta h2 { font-size:20px; font-weight:700; }
+.rmeta h2 em { font-style:normal; color:var(--success); }
+.rmeta p { font-size:13px; color:var(--muted); margin-top:3px; }
+.rbody { padding:16px 20px; }
+.rlabel { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; }
+.rdetail { font-size:14px; line-height:1.6; margin-top:6px; }
+.confrow { display:flex; align-items:center; gap:10px; margin-top:14px; }
+.confrow span { font-size:12px; color:var(--muted); white-space:nowrap; }
+.track { flex:1; height:5px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+.fill { height:100%; border-radius:3px; transition:width .6s; }
+#histView { display:none; }
+.hlabel { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+.hitem { background:var(--surface); border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.hthumb { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--surface2); }
+.hcount { font-size:18px; font-weight:700; }
+.hsub { font-size:12px; color:var(--muted); }
+.htime { font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+.empty { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; line-height:1.6; }
+#ci,#gi { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🔢</div>
+  <div>
+    <h1>Item Counter AI</h1>
+    <small>Hitung otomatis dengan AI</small>
+  </div>
+  <button class="hbtn" id="hbtn" onclick="toggleHist()">📋 Riwayat</button>
+</header>
+<main>
+  <div id="mainView">
+    <div class="zone" id="zone" onclick="document.getElementById('gi').click()">
+      <span style="font-size:44px;opacity:.5">📦</span>
+      <p>Ketuk untuk pilih foto<br>dari galeri</p>
+      <span class="hint">Karung · Botol · Kotak · Palet</span>
+    </div>
+
+    <!-- TWO SEPARATE inputs: camera vs gallery -->
+    <input type="file" id="ci" accept="image/*" capture="environment">
+    <input type="file" id="gi" accept="image/*">
+
+    <div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Jenis barang:</p>
+      <div class="chips">
+        <div class="chip on" onclick="setType(this,'auto')">🤖 Otomatis</div>
+        <div class="chip" onclick="setType(this,'sack')">🎒 Karung</div>
+        <div class="chip" onclick="setType(this,'bottle')">🫙 Botol/Galon</div>
+        <div class="chip" onclick="setType(this,'box')">📦 Kotak</div>
+        <div class="chip" onclick="setType(this,'pallet')">🪵 Palet</div>
+        <div class="chip" onclick="setType(this,'bag')">👜 Kemasan</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <!-- Kamera: uses capture="environment" = opens camera directly -->
+      <button class="btn bcam" onclick="document.getElementById('ci').click()">
+        📷 Kamera
+      </button>
+      <!-- Galeri: no capture = opens file/gallery picker -->
+      <button class="btn bgal" onclick="document.getElementById('gi').click()">
+        🖼️ Galeri
+      </button>
+      <button class="btn bcnt" id="cbtn" onclick="doCount()" disabled>
+        🔢 Hitung Sekarang
+      </button>
+    </div>
+
+    <div class="loading" id="loadbox">
+      <div class="spin"></div>
+      <p id="loadmsg">Menganalisis gambar...</p>
+    </div>
+    <div class="errbox" id="errbox"></div>
+    <div class="result" id="resbox">
+      <div class="rtop">
+        <div class="cbox"><span id="rnum">0</span></div>
+        <div class="rmeta">
+          <h2 id="rtitle">—</h2>
+          <p id="rmethod"></p>
+        </div>
+      </div>
+      <div class="rbody">
+        <div class="rlabel">Detail Analisis</div>
+        <div class="rdetail" id="rdetail"></div>
+        <div class="confrow">
+          <span>Akurasi</span>
+          <div class="track"><div class="fill" id="rbar" style="width:0%"></div></div>
+          <span id="rpct">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="histView">
+    <p class="hlabel">Riwayat Hitungan</p>
+    <div id="histList"></div>
+  </div>
+</main>
+<script>
+var img=null, itype='auto', hist=JSON.parse(localStorage.getItem('ch')||'[]'), showing=false;
+var tmap={auto:'item',sack:'karung',bottle:'botol/galon',box:'kotak',pallet:'palet',bag:'kemasan'};
+var lmsgs=['Menganalisis gambar...','AI mendeteksi item...','Menghitung dengan teliti...','Hampir selesai...'];
+var li=0,lt;
+
+function loadFile(f){
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    img=e.target.result;
+    var z=document.getElementById('zone');
+    z.innerHTML='<img src="'+img+'"><div class="zone-over"><p style="color:white;font-size:14px;font-weight:600">✅ Foto siap</p><p style="color:rgba(255,255,255,0.6);font-size:12px">Ketuk untuk ganti</p></div>';
+    z.className='zone ready';
+    z.onclick=function(){document.getElementById('gi').click();};
+    document.getElementById('cbtn').disabled=false;
+    hideAll();
+  };
+  r.readAsDataURL(f);
+}
+
+document.getElementById('ci').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
+document.getElementById('gi').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
+
+function setType(el,t){
+  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on'); itype=t;
+}
+
+function hideAll(){
+  document.getElementById('loadbox').classList.remove('on');
+  document.getElementById('errbox').classList.remove('on');
+  document.getElementById('resbox').classList.remove('on');
+}
+
+function showErr(msg){
+  document.getElementById('loadbox').classList.remove('on');
+  var eb=document.getElementById('errbox');
+  eb.classList.add('on');
+  eb.innerHTML='<strong>⚠️ Gagal menghitung:</strong><br>'+msg+'<br><br><small style="opacity:.7">Pastikan koneksi internet aktif, lalu coba lagi.</small>';
+}
+
+async function doCount(){
+  if(!img)return;
+  hideAll();
+  document.getElementById('loadbox').classList.add('on');
+  document.getElementById('cbtn').disabled=true;
+  li=0; document.getElementById('loadmsg').textContent=lmsgs[0];
+  lt=setInterval(function(){li=(li+1)%lmsgs.length;document.getElementById('loadmsg').textContent=lmsgs[li];},1800);
+
+  var hint=itype!=='auto'?'Fokus hitung '+tmap[itype]+'.':'Identifikasi dan hitung semua jenis item.';
+  var prompt='Kamu adalah ahli penghitung item visual yang sangat akurat.\n'+hint+'\n\nHitung SETIAP item di gambar ini termasuk yang sebagian tersembunyi.\nJika ada tumpukan, perkirakan dengan pendekatan baris x kolom.\n\nBalas HANYA dengan JSON berikut tanpa teks lain:\n{"count":<angka total>,"item_type":"<jenis item bahasa Indonesia>","confidence":<0-100>,"method":"<cara hitung, contoh: 5 baris x 4 kolom>","detail":"<penjelasan singkat max 2 kalimat>","visible":<terlihat penuh>,"partial":<sebagian terlihat>}';
+
+  try{
+    var b64=img.split(',')[1];
+    var mime=img.split(';')[0].split(':')[1];
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    clearInterval(lt);
+    if(!res.ok){
+      var ej=await res.json().catch(function(){return{};});
+      throw new Error((ej&&ej.error&&ej.error.message)||'HTTP '+res.status);
+    }
+    var d=await res.json();
+    var raw=((d.content&&d.content[0]&&d.content[0].text)||'').replace(/```json|```/g,'').trim();
+    var p;
+    try{p=JSON.parse(raw);}catch(x){throw new Error('Respons AI tidak valid, coba lagi.');}
+    showRes(p); saveH(p);
+  }catch(err){
+    clearInterval(lt);
+    showErr(err.message||'Kesalahan tidak diketahui');
+  }finally{
+    document.getElementById('cbtn').disabled=false;
+  }
+}
+
+function showRes(d){
+  document.getElementById('loadbox').classList.remove('on');
+  var c=d.count||0;
+  document.getElementById('rnum').textContent=c;
+  document.getElementById('rtitle').innerHTML=c+' <em>'+(d.item_type||'item')+'</em>';
+  document.getElementById('rmethod').textContent=d.method||'';
+  var det=d.detail||'';
+  if(d.visible!=null||d.partial!=null)det+='\n\n📊 Terlihat penuh: '+(d.visible||0)+'  |  Sebagian: '+(d.partial||0);
+  document.getElementById('rdetail').textContent=det;
+  var conf=Math.min(100,Math.max(0,d.confidence||80));
+  var bar=document.getElementById('rbar');
+  bar.style.width=conf+'%';
+  bar.style.background=conf>=80?'var(--success)':conf>=60?'var(--warn)':'#ff6584';
+  document.getElementById('rpct').textContent=conf+'%';
+  document.getElementById('resbox').classList.add('on');
+}
+
+function saveH(d){
+  hist.unshift({count:d.count,item_type:d.item_type,method:d.method,thumb:img,time:new Date().toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})});
+  if(hist.length>30)hist=hist.slice(0,30);
+  try{localStorage.setItem('ch',JSON.stringify(hist));}catch(e){}
+}
+
+function renderHist(){
+  var el=document.getElementById('histList');
+  if(!hist.length){el.innerHTML='<div class="empty">Belum ada riwayat.<br>Foto barang dan mulai hitung!</div>';return;}
+  el.innerHTML=hist.map(function(h){return'<div class="hitem"><img class="hthumb" src="'+h.thumb+'"><div><div class="hcount">'+h.count+' '+(h.item_type||'item')+'</div><div class="hsub">'+(h.method||'')+'</div></div><div class="htime">'+(h.time||'')+'</div></div>';}).join('');
+}
+
+function toggleHist(){
+  showing=!showing;
+  document.getElementById('mainView').style.display=showing?'none':'flex';
+  document.getElementById('mainView').style.flexDirection='column';
+  document.getElementById('histView').style.display=showing?'block':'none';
+  document.getElementById('hbtn').textContent=showing?'📷 Hitung':'📋 Riwayat';
+  if(showing)renderHist();
+}
+
+document.getElementById('mainView').style.display='flex';
+document.getElementById('mainView').style.flexDirection='column';
+</script>
+</body>
+</html>
